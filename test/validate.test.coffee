@@ -39,3 +39,5 @@ describe 'validate', ->
     fields = toFields title: {validator: isHello}
     assert.ok !(invalid fields, title: "hello"), "should be valid, since they match"
     assert.ok (invalid fields, title: "ummm"), "should be invalid, since they match"
+
+  it 'improve strict syntax. collapse into a single function somehow'
