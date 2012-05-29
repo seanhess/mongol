@@ -1,6 +1,6 @@
 assert = require 'assert'
 
-{invalid, toFields} = require '../lib/validate'
+{invalid, toFields, extraProperties} = require '../lib/validate'
 
 describe 'validate', ->
   it 'should make sure types match', ->
@@ -14,14 +14,28 @@ describe 'validate', ->
     assert.equal bad.length, 1
 
   it 'should allow optional fields', ->
-    return
-    schema = toSchema title: String
-    bad = invalid schema, {stuff: "hello"}
-    console.log bad
-    assert.ok !bad, "should have allowed optional title"
+    fields = toFields title: String
+    bad = invalid fields, stuff: "hello"
+    assert.ok !bad, "should not have complained about optional title"
 
-  it 'should check for required fields'
+  it 'should check for required fields', ->
+    fields = toFields title: {type: String, required: true}
+    bad = invalid fields, stuff: "hello"
+    assert.ok bad, "should have complained about required title"
 
-  it 'should strict check'
+  it 'should strict check', ->
+    fields = toFields title: String
+    extra = extraProperties fields, stuff: "hello"
+    assert.ok extra
+    assert.equal extra.length, 1, "should have said that 'stuff' was extra"
 
-  it 'should allow custom validators'
+  it 'should allow custom validators', ->
+    fields = toFields title: {validator: (f, v) -> false}
+    bad = (invalid fields, stuff: "hello")
+    assert.ok bad, "should be invalid"
+
+    isHello = (f, v) -> v is "hello"
+
+    fields = toFields title: {validator: isHello}
+    assert.ok !(invalid fields, title: "hello"), "should be valid, since they match"
+    assert.ok (invalid fields, title: "ummm"), "should be invalid, since they match"
