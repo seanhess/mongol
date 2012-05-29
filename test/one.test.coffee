@@ -18,6 +18,9 @@ describe 'mongol', ->
     it 'should drop database', (done) ->
       db.dropDatabase(done)
 
+  describe 'connection', ->
+    it 'should work with mongodb-wrapper or mongolian'
+
   describe 'simple models', ->
     it 'should let me save a document', (done) ->
 
@@ -29,8 +32,8 @@ describe 'mongol', ->
 
       henry.save (err, doc) ->
         assert.ifError err
-        assert.ok doc
-        assert.ok doc._id
+        assert.ok doc, 'no doc'
+        assert.ok doc._id, 'no id field'
         done()
 
     it 'should get an object back out', (done) ->
@@ -47,9 +50,46 @@ describe 'mongol', ->
         assert.equal henry.name, 'henry'
         done()
 
+  describe 'validation', ->
+    class People extends Model
+      schema: name: String
+
+    people = new People db.collection 'people'
+
+    it 'should validate when you call .invalid', ->
+      person = people.make {name: 12}
+      invalid = person.invalid()
+      assert.ok invalid
+
+    it 'should be valid if correct', ->
+      person = people.make {name: "name"}
+      invalid = person.invalid()
+      assert.ok !invalid?
+
+    it 'should return information about the invalid fields', ->
+      person = people.make {name: 12}
+      invalid = person.invalid()
+      assert.ok invalid.length
+      for info in invalid
+        assert.equal info.field, 'name'
+
+    it 'should not allow you to save an invalid document', (done) ->
+      person = people.make {name: 12}
+      person.save (err) ->
+        assert.ok err
+        done()
+
+    it 'should allow for custom validators'
+    it 'should have required fields'
+    it 'should have names that make more sense'
+
   describe 'document', ->
     class People extends Model
+      all: (cb) -> @collection.find().toArray(cb)
+
     people = new People db.collection 'people'
+
+    it 'should have a better name/syntax for making an instance'
 
     it 'should be a Document on save', (done) ->
 
@@ -63,6 +103,10 @@ describe 'mongol', ->
         assert.ok (person instanceof Document), 'Did not cast person to Document on save'
         done()
 
+    it 'should set _id on documents'
+    # person = people.make {}
+    # assert.ok person._id
+
     it 'should be Document on find', (done) ->
       person = people.make {woot: "woot"}
       person.save (err, person) ->
@@ -71,8 +115,12 @@ describe 'mongol', ->
 
         people.findById person._id, (err, person) ->
           assert.ifError err
-          assert.ok person.save, 'not casted'
+          assert.ok person.save, 'findById not casted'
           done()
+
+          people.all (err, people) ->
+            assert.ifError err
+
 
     it 'should inherit document methods', (done) ->
 
@@ -86,6 +134,8 @@ describe 'mongol', ->
           body: String
 
       posts = new Posts db.collection 'posts'
+
+      assert.equal posts.document, Post
 
       post = posts.make title: "title", body: "body"
 
@@ -101,10 +151,16 @@ describe 'mongol', ->
           assert.equal post.length(), post.body.length
           done()
 
-    it 'should automatically cast stuff for you on find'
+    it 'should support defaults'
 
-  describe 'schemas', ->
-    it 'should not allow you to save an invalid document'
+
+  describe 'inheritance', ->
+    it 'should let you inherit schema'
+    it 'should let you inherit models'
+    it 'should let you inherit documents'
+
+  describe 'joins/populate', ->
+    it 'should have a kewl join syntax'
 
     # # WE DON'T USE THESE YET
     # CommentSchema =
